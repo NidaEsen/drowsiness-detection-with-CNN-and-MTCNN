@@ -102,32 +102,25 @@ class FaceDetector(object):
         cv2.drawContours(img_, [rightEyeHull], -8, (0, 0, 255), 2)
         """
         #iki göz arası mesafe 
-        l=abs(leftEye[3][0]-rightEye[0][0])//2
+        distance_both_eye=abs(leftEye[3][0]-rightEye[0][0])//2
         #sol göz genişliği
-        distance=abs(leftEye[3][0]-leftEye[0][0])
+        width_left_eye=abs(leftEye[3][0]-leftEye[0][0])
 
         
-        c= abs(leftEye[0][1]-leftEye[4][1]+l) if leftEye[4][1] < leftEye[3][1] else  abs(leftEye[0][1]-leftEye[3][1]+l)
+        height_left_eye= abs(leftEye[0][1]-leftEye[4][1]+distance_both_eye) if leftEye[4][1] < leftEye[3][1] else  abs(leftEye[0][1]-leftEye[3][1]+distance_both_eye)
+
+        cropleft = img[leftEye[0][1]-height_left_eye:leftEye[0][1]+height_eye, leftEye[0][0]-width_left_eye:leftEye[0][0]+width_left_eye+distance_both_eye]
         
-        
-        cropleft = img[leftEye[0][1]-c:leftEye[0][1]+c, leftEye[0][0]-distance:leftEye[0][0]+distance+l]
-        
-        #sol göz genişliği
-        distance2=abs(rightEye[3][0]-rightEye[0][0])
+        #sağ göz genişliği
+        distance_right_eye=abs(rightEye[3][0]-rightEye[0][0])
         #göz aralığı max değerini bulma
-
-        
-        c2= abs(rightEye[0][1]-rightEye[4][1]+l) if rightEye[4][1] < rightEye[3][1] else  abs(rightEye[0][1]-rightEye[3][1]+l)
+        height_right_eye= abs(rightEye[0][1]-rightEye[4][1]+distance_both_eye) if rightEye[4][1] < rightEye[3][1] else  abs(rightEye[0][1]-rightEye[3][1]+distance_both_eye)
        
-        cropright = img[rightEye[0][1]-c2:rightEye[0][1]+c2, rightEye[0][0]-(distance2):rightEye[0][0]+(distance2+l)]
-        
-       
+        cropright = img[rightEye[0][1]-height_right_eye:rightEye[0][1]+height_right_eye, rightEye[0][0]-(distance_right_eye):rightEye[0][0]+(distance_right_eye+distance_both_eye)]
         
         return cropright,cropleft
-        
-        
-    
-           
+
+
     def run(self,capture):
 
         
@@ -136,79 +129,39 @@ class FaceDetector(object):
         state = ''
       
         while True:
-            ret,frame=capture.read()
-            #gray=cv2.cvtColor(frame,cv2.COLOR_RGB2GRAY)
+            ret,frame= capture.read()
             if not ret:
                 print("Can't receive frame...exiting")
                 break
             
-            
-            
-            
-            
             try:    
                 boxes, probs, landmarks = self.mtcnn.detect(frame, landmarks=True)
-                
-                right_eye,left_eye=self.find_eyes_and_crop(frame,boxes)
-                
-                
-                prediction=model.predict(self.CNNpreprocessing(right_eye))+model.predict(self.CNNpreprocessing(left_eye))/2.0
+                right_eye,left_eye= self.find_eyes_and_crop(frame,boxes)
+                prediction= model.predict(self.CNNpreprocessing(right_eye))+model.predict(self.CNNpreprocessing(left_eye))/2.0
                 print(prediction)
-                    
-                #self._draw(frame, boxes, probs, landmarks)
-            
-                   
-
-            
-            
-            
-            
-        
-            
-			
-
-       
+                       
                 if prediction > 0.50 :
                     state = 'open'
-                    close_counter = 0
-                  
-                   
-                   
-            
+                    close_counter = 0          
           
                 else:
                     state = 'close'
                     close_counter += 1
-               
-                
-               
-                
+                         
                 if state == 'open' and mem_counter > 1:
                     sound.stop()
                 
                     blinks += 1     
                  
                 
-                if prediction!=None:     
+                if prediction!= None:     
                     print(state)
-            #print(mem_counter)
             
                 if state == 'close' and mem_counter>8 :
-                #time.sleep(2)
                 
                     cv2.putText(frame, "UYUMA!", (10, 60),
  			          cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2) 
                     sound.play()
-                
-            
-                
-	        
-            
-                #for i in range(3): 
-                    #time.sleep(1)
-                #sound.play()
-                
-                
             
 		 
                 mem_counter = close_counter 
@@ -228,10 +181,6 @@ class FaceDetector(object):
         
         cv2.destroyAllWindows()
         del(capture)
-       
-   
-            
-
         
 mtcnn = MTCNN()
 fcd = FaceDetector(mtcnn)
@@ -239,22 +188,7 @@ fcd = FaceDetector(mtcnn)
 t=threading.Thread(fcd.run(capture)) 
 t.daemon=True
 t.start()
-
-#fcd.run(capture)            
-          
-  
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
+                  
             
     
 
